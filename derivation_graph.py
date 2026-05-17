@@ -17,7 +17,7 @@ import os
 import argparse
 import article_parser
 import results_output
-import brute_force
+import sel
 from collections import deque
 
 
@@ -36,9 +36,9 @@ TOKEN_SIMILARITY_STRICTNESS = 2
 # BAYES_TRAINING_PERCENTAGE - percentage of dataset to use for training of Naive Bayes model
 BAYES_TRAINING_PERCENTAGE = 85
 
-BRUTE_FORCE_MAX_WORD_GAP_LIMIT = 500
-BRUTE_FORCE_MAX_SENTENCE_GAP_LIMIT = 10
-BRUTE_FORCE_MAX_SYSTEM_WORD_GAP_LIMIT = 5
+SEL_MAX_WORD_GAP_LIMIT = 500
+SEL_MAX_SENTENCE_GAP_LIMIT = 10
+SEL_MAX_SYSTEM_WORD_GAP_LIMIT = 5
 
 '''HYPER-PARAMETERS'''
 
@@ -191,14 +191,14 @@ def evaluate_adjacency_lists(true_adjacency_lists, predicted_adjacency_lists):
     return accuracies, precisions, recalls, f1_scores, overall_accuracy, overall_precision, overall_recall, overall_f1_score, num_skipped
 
 
-def load_brute_force_tuning_data():
+def load_sel_tuning_data():
     articles = article_parser.get_manually_parsed_articles()
     tuning_data = []
 
     for article_id, article in articles.items():
         html_path = os.path.join("articles", f"{article_id}.html")
 
-        text, equation_ids, marker_equation_ids, marker_is_display = brute_force.parse_html(html_path)
+        text, equation_ids, marker_equation_ids, marker_is_display = sel.parse_html(html_path)
         if (
             text is None
             or equation_ids is None
@@ -207,8 +207,8 @@ def load_brute_force_tuning_data():
         ):
             continue
 
-        tokens, sentence_nums = brute_force.tokenize_with_sentence_ids(text)
-        equations = brute_force.get_equation_positions(tokens, marker_equation_ids, marker_is_display)
+        tokens, sentence_nums = sel.tokenize_with_sentence_ids(text)
+        equations = sel.get_equation_positions(tokens, marker_equation_ids, marker_is_display)
 
         if len(equations) != len(marker_equation_ids):
             print(
@@ -227,8 +227,8 @@ def load_brute_force_tuning_data():
             transitions.append(
                 {
                     "target": right_id,
-                    "gap_words": brute_force.count_gap_words(tokens, left_idx, right_idx),
-                    "gap_sentences": brute_force.count_sentences_between(left_idx, right_idx, sentence_nums),
+                    "gap_words": sel.count_gap_words(tokens, left_idx, right_idx),
+                    "gap_sentences": sel.count_sentences_between(left_idx, right_idx, sentence_nums),
                     "right_is_display": right_is_display,
                 }
             )
@@ -246,8 +246,8 @@ def load_brute_force_tuning_data():
     return tuning_data
 
 
-def get_brute_force_threshold_ranges(tuning_data):
-    system_word_gap_values = set(range(BRUTE_FORCE_MAX_SYSTEM_WORD_GAP_LIMIT + 1))
+def get_sel_threshold_ranges(tuning_data):
+    system_word_gap_values = set(range(SEL_MAX_SYSTEM_WORD_GAP_LIMIT + 1))
     word_gap_values = {0}
     sentence_gap_values = {0}
 
@@ -256,15 +256,15 @@ def get_brute_force_threshold_ranges(tuning_data):
             if not transition["right_is_display"]:
                 continue
 
-            if transition["gap_words"] <= BRUTE_FORCE_MAX_WORD_GAP_LIMIT:
+            if transition["gap_words"] <= SEL_MAX_WORD_GAP_LIMIT:
                 word_gap_values.add(transition["gap_words"])
-            if transition["gap_sentences"] <= BRUTE_FORCE_MAX_SENTENCE_GAP_LIMIT:
+            if transition["gap_sentences"] <= SEL_MAX_SENTENCE_GAP_LIMIT:
                 sentence_gap_values.add(transition["gap_sentences"])
 
     return sorted(system_word_gap_values), sorted(word_gap_values), sorted(sentence_gap_values)
 
 
-def run_brute_force_with_cached_data(
+def run_sel_with_cached_data(
     tuning_data,
     max_system_words_gap,
     max_word_gap,
@@ -297,7 +297,7 @@ def run_brute_force_with_cached_data(
 
             current_system = [target_id]
 
-        predicted_adj = brute_force.get_full_adj_list(local_adj, article_data["equation_ids"])
+        predicted_adj = sel.get_full_adj_list(local_adj, article_data["equation_ids"])
 
         article_ids.append(article_data["article_id"])
         true_adjacency_lists.append(article_data["true_adjacency_list"])
@@ -306,15 +306,15 @@ def run_brute_force_with_cached_data(
     return article_ids, true_adjacency_lists, predicted_adjacency_lists
 
 
-def tune_brute_force_vars():
-    tuning_data = load_brute_force_tuning_data()
-    system_word_gap_range, word_gap_range, sentence_gap_range = get_brute_force_threshold_ranges(tuning_data)
+def tune_sel_vars():
+    tuning_data = load_sel_tuning_data()
+    system_word_gap_range, word_gap_range, sentence_gap_range = get_sel_threshold_ranges(tuning_data)
     best_result = None
 
     for max_system_words_gap in system_word_gap_range:
         for max_sentence_gap in sentence_gap_range:
             for max_word_gap in word_gap_range:
-                article_ids, true_adjacency_lists, predicted_adjacency_lists = run_brute_force_with_cached_data(
+                article_ids, true_adjacency_lists, predicted_adjacency_lists = run_sel_with_cached_data(
                     tuning_data=tuning_data,
                     max_system_words_gap=max_system_words_gap,
                     max_word_gap=max_word_gap,
@@ -354,7 +354,7 @@ def tune_brute_force_vars():
     ) = best_result
 
     print(
-        "Best brute-force thresholds: "
+        "Best SEL thresholds: "
         f"max_system_words_gap={best_max_system_words_gap}, "
         f"max_word_gap={best_max_word_gap}, "
         f"max_sentence_gap={best_max_sentence_gap}, "
@@ -386,10 +386,10 @@ def run_derivation_algo(algorithm_option):
     articles_used = []
     train_article_ids = []
 
-    if algorithm_option == 'brute':
-        articles_used, true_adjacency_lists, predicted_adjacency_lists = tune_brute_force_vars()
+    if algorithm_option == 'sel':
+        articles_used, true_adjacency_lists, predicted_adjacency_lists = tune_sel_vars()
     else:
-        articles_used, true_adjacency_lists, predicted_adjacency_lists = brute_force.brute_force_algo()
+        articles_used, true_adjacency_lists, predicted_adjacency_lists = sel.sel_algorithm()
             
     
     # Get accuracy numbers
@@ -400,8 +400,8 @@ def run_derivation_algo(algorithm_option):
         output_name = f"token_similarity_{TOKEN_SIMILARITY_STRICTNESS}_{TOKEN_SIMILARITY_THRESHOLD}_{TOKEN_SIMILARITY_DIRECTION}"
     elif algorithm_option == 'bayes':
         output_name = f"naive_bayes_{BAYES_TRAINING_PERCENTAGE}"
-    elif algorithm_option == 'brute':
-        output_name = f'brute_force'
+    elif algorithm_option == 'sel':
+        output_name = f'sel'
     elif algorithm_option in ['gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'combine', 'chatgpt', 'combine_chatgpt', 'chatgptfewshot']:
         output_name = f"{algorithm_option}"
 
@@ -416,7 +416,7 @@ Runs run_derivation_algo()
 """
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Algorithms to find derivation graphs")
-    parser.add_argument("-a", "--algorithm", required=True, choices=['bayes', 'token', 'trev', 'brute', 'gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'chatgpt', 'combine', 'combine_chatgpt', 'chatgptfewshot'], help="Type of algorithm to compute derivation graph: ['bayes', 'token', 'trev', 'brute', 'gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'chatgpt', 'combine', 'combine_chatgpt', 'chatgptfewshot']")
+    parser.add_argument("-a", "--algorithm", required=True, choices=['bayes', 'token', 'trev', 'sel', 'gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'chatgpt', 'combine', 'combine_chatgpt', 'chatgptfewshot'], help="Type of algorithm to compute derivation graph: ['bayes', 'token', 'trev', 'sel', 'gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'chatgpt', 'combine', 'combine_chatgpt', 'chatgptfewshot']")
     args = parser.parse_args()
     
     # Call corresponding equation similarity function

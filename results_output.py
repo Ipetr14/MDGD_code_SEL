@@ -21,7 +21,7 @@ OUTPUT_FOLDER_PATHS = {
     'important_equation': './outputs/Important_Equation',
     'token': './outputs/Token_Similarity',
     'bayes': './outputs/Naive_Bayes',
-    'brute': './outputs/Brute_Force',
+    'sel': './outputs/SEL',
     'gemini': './outputs/Gemini',
     'llama': './outputs/Llama',
     'mistral': './outputs/Mistral',
@@ -131,7 +131,7 @@ def save_derivation_graph_results(algo_type, name, article_ids, predicted_adjace
         output_file_path = os.path.join(cur_output_path, f'{name}_{timestamp}.json')
     elif algo_type == 'token':
         output_file_path = os.path.join(cur_output_path, f'{name}.json')
-    elif algo_type == 'brute':
+    elif algo_type == 'sel':
         output_file_path = os.path.join(cur_output_path, f'{name}.json')
     elif algo_type in ['gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'combine', 'chatgpt', 'combine_chatgpt', 'chatgptfewshot']:
         output_file_path = os.path.join(cur_output_path, f'{name}_{timestamp}.json')
@@ -213,7 +213,7 @@ def save_derivation_graph_results(algo_type, name, article_ids, predicted_adjace
                 json.dump({"Correctness": overall_correctness, "Results": article_data}, json_file, indent=4)
             elif algo_type == 'bayes':
                 json.dump({"Correctness": overall_correctness, "Results": article_data, "Training": training_set}, json_file, indent=4)
-            elif algo_type == 'brute':
+            elif algo_type == 'sel':
                 json.dump({"Correctness": overall_correctness, "Results": article_data}, json_file, indent=4)
             elif algo_type in ['gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'combine', 'chatgpt', 'combine_chatgpt', 'chatgptfewshot']:
                 json.dump({"Correctness": overall_correctness, "Results": article_data, "Errors": training_set}, json_file, indent=4)

@@ -1,5 +1,6 @@
 '''
-Description: Python code for the brute force algorithm, version with the "bamboo" or "stick"
+Description: Python code for the Sequential Equation Linking Algorithm (SEL),
+version with the "bamboo" or "stick" locality rules.
 Author: Petr Myagkov
 Modification Log:
     March 23, 2026: Created file wrote foundational function for html parsing (were mostly already implemented by Vishesh Prasad)
@@ -357,9 +358,10 @@ def get_full_adj_list(old_adj_list, equation_ids):
     return full_adj_list
 
 
-def brute_force_algo(max_system_words_gap, max_words_gap, max_sentences_gap):
+def sel_algorithm(max_system_words_gap, max_words_gap, max_sentences_gap):
     """
-    Run the "bamboo/stick" brute force algorithm on all manually parsed articles.
+    Run the Sequential Equation Linking Algorithm (SEL) on all manually parsed
+    articles.
 
     Args:
         max_system_words_gap (int): maximum number of words allowed between
@@ -371,8 +373,7 @@ def brute_force_algo(max_system_words_gap, max_words_gap, max_sentences_gap):
     Returns:
         tuple[list[str], list[dict[str, list[str]]], list[dict[str, list[str | None]]]]:
             stores the processed article IDs, the labeled adjacency lists from
-            the dataset, and the adjacency lists predicted by the brute-force
-            algorithm.
+            the dataset, and the adjacency lists predicted by SEL.
 
     """
     articles_dir = "articles"
