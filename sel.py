@@ -265,6 +265,42 @@ def count_sentences_between(left_pos, right_pos, sentence_nums):
 
     return full_sentences_between
 
+def has_explicit_derivation_cue(tokens, left_pos, right_pos):
+    """
+    Detect common left-to-right derivation wording between two equation markers.
+
+    Common cases include "we get", "we obtain", "gives", "yields",
+    "leads to", "results in", "implies", "can be written as", and
+    "reduces to".
+    """
+    if left_pos >= right_pos:
+        return False
+
+    gap_tokens = [
+        token.lower()
+        for token in tokens[left_pos + 1:right_pos]
+        if is_word_token(token)
+    ]
+    gap_text = " ".join(gap_tokens)
+
+    if not gap_text:
+        return False
+
+    explicit_patterns = [
+        r"\b(?:we|one|this|these|which|that)\s+(?:then\s+|thus\s+|therefore\s+|now\s+)?(?:get|gets|obtain|obtains|find|finds|derive|derives|arrive\s+at|arrives\s+at)\b",
+        r"\b(?:get|obtain|find|derive|arrive\s+at)\b",
+        r"\b(?:give|gives|yield|yields|imply|implies)\b",
+        r"\b(?:lead|leads)\s+to\b",
+        r"\b(?:result|results)\s+in\b",
+        r"\b(?:reduce|reduces|reduced)\s+to\b",
+        r"\b(?:become|becomes)\b",
+        r"\b(?:can|may|is|are|be)\s+(?:also\s+)?(?:be\s+)?written\s+as\b",
+        r"\b(?:can|may|is|are|be)\s+(?:also\s+)?(?:be\s+)?rewritten\s+as\b",
+        r"\b(?:take|takes)\s+(?:the\s+)?form\b",
+    ]
+
+    return any(re.search(pattern, gap_text) for pattern in explicit_patterns)
+
 def build_local_adjacency(
     equations,
     tokens,
@@ -311,6 +347,14 @@ def build_local_adjacency(
 
         gap_words = count_gap_words(tokens, left_idx, right_idx)
         full_sentences_between = count_sentences_between(left_idx, right_idx, sentence_nums)
+
+        if (
+            right_is_display
+            and left_id != right_id
+            and gap_words <= max_system_words_gap
+            and has_explicit_derivation_cue(tokens, left_idx, right_idx)
+        ):
+            adjacency.setdefault(left_id, []).append(right_id)
 
         # Consecutive equations with a small enough word gap are grouped into one system.
         if gap_words <= max_system_words_gap:

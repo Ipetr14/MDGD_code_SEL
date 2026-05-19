@@ -36,6 +36,8 @@ the code currently does this:
 The local graph-building rules live in [`build_local_adjacency(...)`](sel.py).
 
 - Equation occurrences are processed in document order.
+- Before applying locality rules, SEL checks adjacent equation occurrences for explicit left-to-right derivation wording such as `we get`, `we obtain`, `gives`, `yields`, `leads to`, `results in`, `implies`, `can be written as`, or `reduces to`.
+- When an explicit derivation is detected within the `max_system_words_gap` threshold, SEL adds that direct edge as an extra edge, then continues through the existing local-system rules unchanged.
 - If two consecutive occurrences have at most `max_system_words_gap` word tokens between them, they are grouped into the same local equation system.
 - When the gap is larger than `max_system_words_gap`, SEL may connect the current system to the next occurrence only if the target is a displayed numbered equation and both remaining thresholds are satisfied.
 - If a connection is allowed, every equation currently in the local system gets an edge to that displayed equation.

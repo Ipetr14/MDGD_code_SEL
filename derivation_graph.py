@@ -221,15 +221,21 @@ def load_sel_tuning_data():
         occurrence_ids = [equation_id for equation_id, _, _ in equations]
 
         for index in range(len(equations) - 1):
-            _, left_idx, _ = equations[index]
+            left_id, left_idx, _ = equations[index]
             right_id, right_idx, right_is_display = equations[index + 1]
 
             transitions.append(
                 {
+                    "source": left_id,
                     "target": right_id,
                     "gap_words": sel.count_gap_words(tokens, left_idx, right_idx),
                     "gap_sentences": sel.count_sentences_between(left_idx, right_idx, sentence_nums),
                     "right_is_display": right_is_display,
+                    "explicit_derivation": (
+                        right_is_display
+                        and left_id != right_id
+                        and sel.has_explicit_derivation_cue(tokens, left_idx, right_idx)
+                    ),
                 }
             )
 
@@ -281,6 +287,11 @@ def run_sel_with_cached_data(
 
         for transition in article_data["transitions"]:
             target_id = transition["target"]
+
+            if transition["explicit_derivation"]:
+                source_id = transition["source"]
+                if source_id != target_id and transition["gap_words"] <= max_system_words_gap:
+                    local_adj.setdefault(source_id, []).append(target_id)
 
             if transition["gap_words"] <= max_system_words_gap:
                 current_system.append(target_id)

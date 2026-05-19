@@ -2,41 +2,41 @@
     "Correctness": {
         "Number of articles used": 69,
         "Overall Correctness": {
-            "Overall Accuracy": 0.9229733926907547,
-            "Overall Precision": 0.5675675675675675,
-            "Overall Recall": 0.519434628975265,
-            "Overall F1 Score": 0.5424354243542435
+            "Overall Accuracy": 0.9240886495443248,
+            "Overall Precision": 0.5741687979539642,
+            "Overall Recall": 0.5288574793875147,
+            "Overall F1 Score": 0.550582464745555
         },
         "Aggregate Correctness Statistics": {
             "Accuracy": {
-                "Mean": 0.9062125555082751,
+                "Mean": 0.9076136430604841,
                 "Lowest": 0.6666666666666666,
-                "25th Quartile (Q1)": 0.88,
+                "25th Quartile (Q1)": 0.8837209302325582,
                 "Median": 0.9153846153846154,
-                "75th Quartile (Q3)": 0.9505703422053232,
+                "75th Quartile (Q3)": 0.9510869565217391,
                 "Highest": 1.0
             },
             "Precision": {
-                "Mean": 0.5590193198713861,
+                "Mean": 0.5654905459078295,
                 "Lowest": 0.0,
-                "25th Quartile (Q1)": 0.4,
-                "Median": 0.5789473684210527,
+                "25th Quartile (Q1)": 0.4444444444444444,
+                "Median": 0.5833333333333334,
                 "75th Quartile (Q3)": 0.7,
                 "Highest": 1.0
             },
             "Recall": {
-                "Mean": 0.52949513635199,
+                "Mean": 0.5390424730732397,
                 "Lowest": 0.0,
-                "25th Quartile (Q1)": 0.35714285714285715,
-                "Median": 0.5217391304347826,
-                "75th Quartile (Q3)": 0.6666666666666666,
+                "25th Quartile (Q1)": 0.375,
+                "Median": 0.5294117647058824,
+                "75th Quartile (Q3)": 0.7272727272727273,
                 "Highest": 1.0
             },
             "F1 Score": {
-                "Mean": 0.5397241674132537,
+                "Mean": 0.5478223686075923,
                 "Lowest": 0.0,
                 "25th Quartile (Q1)": 0.4000000000000001,
-                "Median": 0.56,
+                "Median": 0.5625000000000001,
                 "75th Quartile (Q3)": 0.6875,
                 "Highest": 1.0
             }
@@ -49,7 +49,8 @@
                     null
                 ],
                 "S0.E2": [
-                    "S0.E3"
+                    "S0.E3",
+                    "S0.E4"
                 ],
                 "S0.E3": [
                     null
@@ -65,7 +66,8 @@
                     "S0.E8"
                 ],
                 "S0.E7": [
-                    "S0.E8"
+                    "S0.E8",
+                    "S0.E9"
                 ],
                 "S0.E8": [
                     null
@@ -77,10 +79,10 @@
                     null
                 ]
             },
-            "Accuracy": 0.9339622641509434,
-            "Precision": 0.8181818181818182,
-            "Recall": 0.6428571428571429,
-            "F1 Score": 0.7200000000000001
+            "Accuracy": 0.9528301886792453,
+            "Precision": 0.8461538461538461,
+            "Recall": 0.7857142857142857,
+            "F1 Score": 0.8148148148148148
         },
         "Article ID: 0907.2870": {
             "Adjacency List": {
@@ -1572,7 +1574,7 @@
         "Article ID: 1612.00392": {
             "Adjacency List": {
                 "S2.E1": [
-                    null
+                    "S2.E3"
                 ],
                 "S2.E2": [
                     "S2.E4",
@@ -1588,6 +1590,7 @@
                     null
                 ],
                 "S2.E6": [
+                    "S2.E7",
                     "S2.E8"
                 ],
                 "S2.E7": [
@@ -1612,10 +1615,10 @@
                     null
                 ]
             },
-            "Accuracy": 0.8926553672316384,
-            "Precision": 0.35714285714285715,
-            "Recall": 0.3333333333333333,
-            "F1 Score": 0.3448275862068965
+            "Accuracy": 0.9090909090909091,
+            "Precision": 0.4666666666666667,
+            "Recall": 0.4666666666666667,
+            "F1 Score": 0.4666666666666667
         },
         "Article ID: 1612.00463": {
             "Adjacency List": {
@@ -1731,6 +1734,7 @@
                     "S0.E5"
                 ],
                 "S0.E5": [
+                    "S0.E7",
                     "S0.E8"
                 ],
                 "S0.E6": [
@@ -1743,10 +1747,10 @@
                     null
                 ]
             },
-            "Accuracy": 0.8823529411764706,
-            "Precision": 0.5,
-            "Recall": 0.5,
-            "F1 Score": 0.5
+            "Accuracy": 0.8970588235294118,
+            "Precision": 0.5555555555555556,
+            "Recall": 0.625,
+            "F1 Score": 0.5882352941176471
         },
         "Article ID: 1510.00543": {
             "Adjacency List": {
@@ -2430,16 +2434,16 @@
                     null
                 ],
                 "S4.E6": [
-                    null
+                    "S4.E7"
                 ],
                 "S4.E7": [
                     null
                 ]
             },
-            "Accuracy": 0.8727272727272727,
-            "Precision": 0.5714285714285714,
-            "Recall": 0.5,
-            "F1 Score": 0.5333333333333333
+            "Accuracy": 0.9074074074074074,
+            "Precision": 0.7142857142857143,
+            "Recall": 0.625,
+            "F1 Score": 0.6666666666666666
         },
         "Article ID: physics9704005": {
             "Adjacency List": {
@@ -2527,7 +2531,7 @@
                     null
                 ],
                 "S5.E10": [
-                    null
+                    "S5.E11"
                 ],
                 "S5.E11": [
                     null
@@ -2560,10 +2564,10 @@
                     null
                 ]
             },
-            "Accuracy": 0.9389978213507625,
-            "Precision": 0.4,
-            "Recall": 0.3333333333333333,
-            "F1 Score": 0.3636363636363636
+            "Accuracy": 0.9432314410480349,
+            "Precision": 0.45,
+            "Recall": 0.375,
+            "F1 Score": 0.4090909090909091
         },
         "Article ID: quant-ph9704026": {
             "Adjacency List": {
@@ -2813,7 +2817,8 @@
                     null
                 ],
                 "S0.E9": [
-                    "S0.E10"
+                    "S0.E10",
+                    "S0.E11"
                 ],
                 "S0.E10": [
                     null
@@ -2822,10 +2827,10 @@
                     null
                 ]
             },
-            "Accuracy": 0.875968992248062,
-            "Precision": 0.2727272727272727,
-            "Recall": 0.2727272727272727,
-            "F1 Score": 0.2727272727272727
+            "Accuracy": 0.8837209302325582,
+            "Precision": 0.3333333333333333,
+            "Recall": 0.36363636363636365,
+            "F1 Score": 0.34782608695652173
         }
     }
 }
