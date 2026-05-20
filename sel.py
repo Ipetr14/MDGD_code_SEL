@@ -102,6 +102,18 @@ def parse_html(html_path):
     text = (text.rsplit("References", 1))[0]
     text = text.split("Acknowledgments")[0]
 
+    # Markers are collected before trailing sections are trimmed. If a
+    # bibliography or acknowledgment contains equation references, their text is
+    # removed above and the aligned marker metadata must be removed with it.
+    retained_marker_count = text.count("MATHMARKER")
+    marker_equation_ids = marker_equation_ids[:retained_marker_count]
+    marker_is_display = marker_is_display[:retained_marker_count]
+    equation_ids = [
+        equation_id
+        for equation_id, is_display in zip(marker_equation_ids, marker_is_display)
+        if is_display
+    ]
+
     return text, equation_ids, marker_equation_ids, marker_is_display
 
 def tokenize_with_sentence_ids(text):
@@ -308,6 +320,7 @@ def build_local_adjacency(
     max_system_words_gap,
     max_words_gap,
     max_sentences_gap,
+    use_explicit_edges=True,
 ):
     """
     Build an adjacency list using the set of rules:
@@ -329,6 +342,8 @@ def build_local_adjacency(
             equations.
         max_sentences_gap (int): maximum number of sentences (periods) allowed between linked
             equations.
+        use_explicit_edges (bool): whether explicit derivation phrases should
+            add direct edges between adjacent equation occurrences.
 
     Returns:
         dict[str, list[str]]: maps each source equation ID to the list of
@@ -349,7 +364,8 @@ def build_local_adjacency(
         full_sentences_between = count_sentences_between(left_idx, right_idx, sentence_nums)
 
         if (
-            right_is_display
+            use_explicit_edges
+            and right_is_display
             and left_id != right_id
             and gap_words <= max_system_words_gap
             and has_explicit_derivation_cue(tokens, left_idx, right_idx)
@@ -402,7 +418,12 @@ def get_full_adj_list(old_adj_list, equation_ids):
     return full_adj_list
 
 
-def sel_algorithm(max_system_words_gap, max_words_gap, max_sentences_gap):
+def sel_algorithm(
+    max_system_words_gap,
+    max_words_gap,
+    max_sentences_gap,
+    use_explicit_edges=True,
+):
     """
     Run the Sequential Equation Linking Algorithm (SEL) on all manually parsed
     articles.
@@ -414,6 +435,8 @@ def sel_algorithm(max_system_words_gap, max_words_gap, max_sentences_gap):
             equations.
         max_sentences_gap (int): maximum number of sentences allowed between
             linked equations.
+        use_explicit_edges (bool): whether explicit derivation phrases should
+            add direct edges between adjacent equation occurrences.
     Returns:
         tuple[list[str], list[dict[str, list[str]]], list[dict[str, list[str | None]]]]:
             stores the processed article IDs, the labeled adjacency lists from
@@ -428,7 +451,7 @@ def sel_algorithm(max_system_words_gap, max_words_gap, max_sentences_gap):
     predicted_adjacency_lists = []
 
     for article_id, article in articles.items():
-        html_path = os.path.join(articles_dir, f"{article_id}.html")
+        html_path = article_parser.get_article_html_path(article_id, articles_dir)
 
         text, equation_ids, marker_equation_ids, marker_is_display = parse_html(html_path)
         if (
@@ -456,6 +479,7 @@ def sel_algorithm(max_system_words_gap, max_words_gap, max_sentences_gap):
             max_system_words_gap=max_system_words_gap,
             max_words_gap=max_words_gap,
             max_sentences_gap=max_sentences_gap,
+            use_explicit_edges=use_explicit_edges,
         )
 
         predicted_adj = get_full_adj_list(local_adj, equation_ids)

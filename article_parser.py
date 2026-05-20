@@ -15,6 +15,16 @@ import os
 from bs4 import BeautifulSoup
 
 
+def get_article_html_path(article_id, articles_dir='articles'):
+    direct_path = os.path.join(articles_dir, f'{article_id}.html')
+    if os.path.exists(direct_path):
+        return direct_path
+
+    normalized_article_id = article_id.replace('/', '_')
+    normalized_path = os.path.join(articles_dir, f'{normalized_article_id}.html')
+    return normalized_path
+
+
 
 
 """
@@ -32,7 +42,11 @@ def get_manually_parsed_articles():
         json_data = json.load(json_file)
 
         # Dictionary of manually parsed articles
-        articles = json_data['Manually Parsed Articles']
+        if isinstance(json_data, list):
+            articles = json_data
+        else:
+            articles = json_data['Manually Parsed Articles']
+
         manually_parsed_articles = {}
         for article in articles:
             manually_parsed_articles[article['Article ID']] = article

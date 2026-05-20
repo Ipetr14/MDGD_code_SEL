@@ -196,7 +196,7 @@ def load_sel_tuning_data():
     tuning_data = []
 
     for article_id, article in articles.items():
-        html_path = os.path.join("articles", f"{article_id}.html")
+        html_path = article_parser.get_article_html_path(article_id)
 
         text, equation_ids, marker_equation_ids, marker_is_display = sel.parse_html(html_path)
         if (
@@ -275,6 +275,7 @@ def run_sel_with_cached_data(
     max_system_words_gap,
     max_word_gap,
     max_sentence_gap,
+    use_explicit_edges=True,
 ):
     article_ids = []
     true_adjacency_lists = []
@@ -288,7 +289,7 @@ def run_sel_with_cached_data(
         for transition in article_data["transitions"]:
             target_id = transition["target"]
 
-            if transition["explicit_derivation"]:
+            if use_explicit_edges and transition["explicit_derivation"]:
                 source_id = transition["source"]
                 if source_id != target_id and transition["gap_words"] <= max_system_words_gap:
                     local_adj.setdefault(source_id, []).append(target_id)
@@ -317,7 +318,7 @@ def run_sel_with_cached_data(
     return article_ids, true_adjacency_lists, predicted_adjacency_lists
 
 
-def tune_sel_vars():
+def tune_sel_vars(use_explicit_edges=True):
     tuning_data = load_sel_tuning_data()
     system_word_gap_range, word_gap_range, sentence_gap_range = get_sel_threshold_ranges(tuning_data)
     best_result = None
@@ -330,6 +331,7 @@ def tune_sel_vars():
                     max_system_words_gap=max_system_words_gap,
                     max_word_gap=max_word_gap,
                     max_sentence_gap=max_sentence_gap,
+                    use_explicit_edges=use_explicit_edges,
                 )
 
                 evaluation = evaluate_adjacency_lists(true_adjacency_lists, predicted_adjacency_lists)
@@ -369,6 +371,7 @@ def tune_sel_vars():
         f"max_system_words_gap={best_max_system_words_gap}, "
         f"max_word_gap={best_max_word_gap}, "
         f"max_sentence_gap={best_max_sentence_gap}, "
+        f"use_explicit_edges={use_explicit_edges}, "
         f"overall_f1_score={best_f1_score:.6f}"
     )
 
@@ -382,7 +385,7 @@ Input: algorithm_option -- type of equation similarity to run
 Return: none
 Function: Find the equations in articles and construct a graph depending on equation similarity
 """
-def run_derivation_algo(algorithm_option):
+def run_derivation_algo(algorithm_option, use_explicit_edges=True):
     # Get a list of manually parsed article IDs
     article_ids = article_parser.get_manually_parsed_articles()
 
@@ -398,7 +401,9 @@ def run_derivation_algo(algorithm_option):
     train_article_ids = []
 
     if algorithm_option == 'sel':
-        articles_used, true_adjacency_lists, predicted_adjacency_lists = tune_sel_vars()
+        articles_used, true_adjacency_lists, predicted_adjacency_lists = tune_sel_vars(
+            use_explicit_edges=use_explicit_edges,
+        )
     else:
         articles_used, true_adjacency_lists, predicted_adjacency_lists = sel.sel_algorithm()
             
@@ -428,7 +433,15 @@ Runs run_derivation_algo()
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Algorithms to find derivation graphs")
     parser.add_argument("-a", "--algorithm", required=True, choices=['bayes', 'token', 'trev', 'sel', 'gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'chatgpt', 'combine', 'combine_chatgpt', 'chatgptfewshot'], help="Type of algorithm to compute derivation graph: ['bayes', 'token', 'trev', 'sel', 'gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'chatgpt', 'combine', 'combine_chatgpt', 'chatgptfewshot']")
+    parser.add_argument(
+        "--disable-explicit-edges",
+        action="store_true",
+        help="Disable SEL direct edges from explicit derivation phrases.",
+    )
     args = parser.parse_args()
     
     # Call corresponding equation similarity function
-    run_derivation_algo(args.algorithm.lower())
+    run_derivation_algo(
+        args.algorithm.lower(),
+        use_explicit_edges=not args.disable_explicit_edges,
+    )

@@ -31,13 +31,20 @@ the code currently does this:
 10. Tunes three SEL thresholds over the cached data in [`tune_sel_vars()`](derivation_graph.py).
 11. Keeps the best predicted adjacency lists found during tuning and writes the final report to [`outputs/SEL/sel.json`](outputs/SEL/sel.json).
 
+Explicit derivation edges are enabled by default. To run SEL without adding
+direct edges from explicit derivation phrases, use:
+
+```bash
+python3 derivation_graph.py -a sel --disable-explicit-edges
+```
+
 ## Edge Construction Rules
 
 The local graph-building rules live in [`build_local_adjacency(...)`](sel.py).
 
 - Equation occurrences are processed in document order.
-- Before applying locality rules, SEL checks adjacent equation occurrences for explicit left-to-right derivation wording such as `we get`, `we obtain`, `gives`, `yields`, `leads to`, `results in`, `implies`, `can be written as`, or `reduces to`.
-- When an explicit derivation is detected within the `max_system_words_gap` threshold, SEL adds that direct edge as an extra edge, then continues through the existing local-system rules unchanged.
+- Before applying locality rules, SEL can check adjacent equation occurrences for explicit left-to-right derivation wording such as `we get`, `we obtain`, `gives`, `yields`, `leads to`, `results in`, `implies`, `can be written as`, or `reduces to`.
+- When explicit derivation edges are enabled and one is detected within the `max_system_words_gap` threshold, SEL adds that direct edge as an extra edge, then continues through the existing local-system rules unchanged.
 - If two consecutive occurrences have at most `max_system_words_gap` word tokens between them, they are grouped into the same local equation system.
 - When the gap is larger than `max_system_words_gap`, SEL may connect the current system to the next occurrence only if the target is a displayed numbered equation and both remaining thresholds are satisfied.
 - If a connection is allowed, every equation currently in the local system gets an edge to that displayed equation.
