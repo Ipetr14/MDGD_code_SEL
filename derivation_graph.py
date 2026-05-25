@@ -36,7 +36,7 @@ TOKEN_SIMILARITY_STRICTNESS = 2
 # BAYES_TRAINING_PERCENTAGE - percentage of dataset to use for training of Naive Bayes model
 BAYES_TRAINING_PERCENTAGE = 85
 
-SEL_MAX_WORD_GAP_LIMIT = 500
+SEL_MAX_WORD_GAP_LIMIT = 300
 SEL_MAX_SENTENCE_GAP_LIMIT = 10
 SEL_MAX_SYSTEM_WORD_GAP_LIMIT = 5
 
@@ -207,11 +207,6 @@ def load_sel_tuning_data():
                     "gap_words": sel.count_gap_words(tokens, left_idx, right_idx),
                     "gap_sentences": sel.count_sentences_between(left_idx, right_idx, sentence_nums),
                     "right_is_display": right_is_display,
-                    "explicit_derivation": (
-                        right_is_display
-                        and left_id != right_id
-                        and sel.has_explicit_derivation_cue(tokens, left_idx, right_idx)
-                    ),
                 }
             )
 
@@ -230,7 +225,7 @@ def load_sel_tuning_data():
 
 def get_sel_threshold_ranges(tuning_data):
     system_word_gap_values = set(range(SEL_MAX_SYSTEM_WORD_GAP_LIMIT + 1))
-    word_gap_values = {0}
+    word_gap_values = list(range(SEL_MAX_WORD_GAP_LIMIT + 1))
     sentence_gap_values = {0}
 
     for article_data in tuning_data:
@@ -238,12 +233,10 @@ def get_sel_threshold_ranges(tuning_data):
             if not transition["right_is_display"]:
                 continue
 
-            if transition["gap_words"] <= SEL_MAX_WORD_GAP_LIMIT:
-                word_gap_values.add(transition["gap_words"])
             if transition["gap_sentences"] <= SEL_MAX_SENTENCE_GAP_LIMIT:
                 sentence_gap_values.add(transition["gap_sentences"])
 
-    return sorted(system_word_gap_values), sorted(word_gap_values), sorted(sentence_gap_values)
+    return sorted(system_word_gap_values), word_gap_values, sorted(sentence_gap_values)
 
 
 def run_sel_with_cached_data(
@@ -251,7 +244,6 @@ def run_sel_with_cached_data(
     max_system_words_gap,
     max_word_gap,
     max_sentence_gap,
-    use_explicit_edges=True,
 ):
     article_ids = []
     true_adjacency_lists = []
@@ -264,11 +256,6 @@ def run_sel_with_cached_data(
 
         for transition in article_data["transitions"]:
             target_id = transition["target"]
-
-            if use_explicit_edges and transition["explicit_derivation"]:
-                source_id = transition["source"]
-                if source_id != target_id and transition["gap_words"] <= max_system_words_gap:
-                    local_adj.setdefault(source_id, []).append(target_id)
 
             if transition["gap_words"] <= max_system_words_gap:
                 current_system.append(target_id)
@@ -294,7 +281,7 @@ def run_sel_with_cached_data(
     return article_ids, true_adjacency_lists, predicted_adjacency_lists
 
 
-def tune_sel_vars(use_explicit_edges=True):
+def tune_sel_vars():
     tuning_data = load_sel_tuning_data()
     system_word_gap_range, word_gap_range, sentence_gap_range = get_sel_threshold_ranges(tuning_data)
     best_result = None
@@ -307,7 +294,6 @@ def tune_sel_vars(use_explicit_edges=True):
                     max_system_words_gap=max_system_words_gap,
                     max_word_gap=max_word_gap,
                     max_sentence_gap=max_sentence_gap,
-                    use_explicit_edges=use_explicit_edges,
                 )
 
                 evaluation = evaluate_adjacency_lists(true_adjacency_lists, predicted_adjacency_lists)
@@ -347,7 +333,6 @@ def tune_sel_vars(use_explicit_edges=True):
         f"max_system_words_gap={best_max_system_words_gap}, "
         f"max_word_gap={best_max_word_gap}, "
         f"max_sentence_gap={best_max_sentence_gap}, "
-        f"use_explicit_edges={use_explicit_edges}, "
         f"overall_f1_score={best_f1_score:.6f}"
     )
 
@@ -361,7 +346,7 @@ Input: algorithm_option -- type of equation similarity to run
 Return: none
 Function: Find the equations in articles and construct a graph depending on equation similarity
 """
-def run_derivation_algo(algorithm_option, use_explicit_edges=True):
+def run_derivation_algo(algorithm_option):
     # Get a list of manually parsed article IDs
     article_ids = article_parser.get_manually_parsed_articles()
 
@@ -377,9 +362,7 @@ def run_derivation_algo(algorithm_option, use_explicit_edges=True):
     train_article_ids = []
 
     if algorithm_option == 'sel':
-        articles_used, true_adjacency_lists, predicted_adjacency_lists = tune_sel_vars(
-            use_explicit_edges=use_explicit_edges,
-        )
+        articles_used, true_adjacency_lists, predicted_adjacency_lists = tune_sel_vars()
     else:
         articles_used, true_adjacency_lists, predicted_adjacency_lists = sel.sel_algorithm()
             
@@ -409,15 +392,7 @@ Runs run_derivation_algo()
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Algorithms to find derivation graphs")
     parser.add_argument("-a", "--algorithm", required=True, choices=['bayes', 'token', 'trev', 'sel', 'gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'chatgpt', 'combine', 'combine_chatgpt', 'chatgptfewshot'], help="Type of algorithm to compute derivation graph: ['bayes', 'token', 'trev', 'sel', 'gemini', 'geminifewshot', 'grev1', 'grev2', 'grev3', 'llama', 'mistral', 'qwen', 'zephyr', 'phi', 'chatgpt', 'combine', 'combine_chatgpt', 'chatgptfewshot']")
-    parser.add_argument(
-        "--disable-explicit-edges",
-        action="store_true",
-        help="Disable SEL direct edges from explicit derivation phrases.",
-    )
     args = parser.parse_args()
     
     # Call corresponding equation similarity function
-    run_derivation_algo(
-        args.algorithm.lower(),
-        use_explicit_edges=not args.disable_explicit_edges,
-    )
+    run_derivation_algo(args.algorithm.lower())

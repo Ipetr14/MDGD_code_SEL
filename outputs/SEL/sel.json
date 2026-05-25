@@ -3,9 +3,9 @@
         "Number of articles used": 63,
         "Overall Correctness": {
             "Overall Accuracy": 0.0,
-            "Overall Precision": 0.49445676274944567,
+            "Overall Precision": 0.4922737306843267,
             "Overall Recall": 0.49776785714285715,
-            "Overall F1 Score": 0.4961067853170189
+            "Overall F1 Score": 0.4950055493895672
         },
         "Aggregate Correctness Statistics": {
             "Accuracy": {
@@ -17,9 +17,9 @@
                 "Highest": 0.0
             },
             "Precision": {
-                "Mean": 0.5125991733134591,
+                "Mean": 0.5113142148856434,
                 "Lowest": 0.0,
-                "25th Quartile (Q1)": 0.3333333333333333,
+                "25th Quartile (Q1)": 0.31666666666666665,
                 "Median": 0.5,
                 "75th Quartile (Q3)": 0.75,
                 "Highest": 1.0
@@ -33,7 +33,7 @@
                 "Highest": 1.0
             },
             "F1 Score": {
-                "Mean": 0.5038501641282571,
+                "Mean": 0.5034285198447201,
                 "Lowest": 0.0,
                 "25th Quartile (Q1)": 0.3333333333333333,
                 "Median": 0.5333333333333333,
@@ -1057,6 +1057,7 @@
                 ],
                 "S2.E2": [
                     "S2.E3",
+                    "S4.E5",
                     "S4.E6",
                     "S5.E8"
                 ],
@@ -1098,9 +1099,9 @@
                 ]
             },
             "Accuracy": 0.0,
-            "Precision": 0.3333333333333333,
+            "Precision": 0.3,
             "Recall": 0.23076923076923078,
-            "F1 Score": 0.27272727272727276
+            "F1 Score": 0.2608695652173913
         },
         "Article ID: 1612.00629": {
             "Adjacency List": {
@@ -2271,7 +2272,7 @@
                     "S3.E3"
                 ],
                 "S3.E3": [
-                    null
+                    "S3.E1"
                 ],
                 "S3.E4": [
                     "S4.E6"
@@ -2297,9 +2298,9 @@
                 ]
             },
             "Accuracy": 0.0,
-            "Precision": 0.3333333333333333,
+            "Precision": 0.2857142857142857,
             "Recall": 0.2,
-            "F1 Score": 0.25
+            "F1 Score": 0.23529411764705882
         },
         "Article ID: 2412.17095": {
             "Adjacency List": {
