@@ -185,16 +185,49 @@ def tokenize_with_sentence_ids(text):
     for abbrev in base_non_terminal_abbrev:
         non_terminal_abbrev.update({abbrev, abbrev.capitalize(), abbrev.upper()})
 
+    dotted_non_terminal_abbrev = {
+        ("e", "g"),
+        ("i", "e"),
+    }
+
     def is_sentence_end_token(index):
         token = tokens[index]
         if not re.fullmatch(pattern_sentence_end, token):
             return False
 
-        # Handle abbreviation + dot + label patterns in scientific text.
         if token == ".":
             prev_token = tokens[index - 1] if index > 0 else None
+            next_token = tokens[index + 1] if index + 1 < len(tokens) else None
 
+            # Do not split numerical values such as 1.5 or version-like values.
+            if (
+                prev_token is not None
+                and next_token is not None
+                and prev_token.isdigit()
+                and next_token.isdigit()
+            ):
+                return False
+
+            # Handle abbreviation + dot + label patterns in scientific text.
             if prev_token in non_terminal_abbrev:
+                return False
+
+            # Tokenization separates the dots in forms such as `e.g.` and
+            # `i.e.`; neither dot should introduce an artificial sentence gap.
+            starts_dotted_abbrev = (
+                index >= 1
+                and index + 2 < len(tokens)
+                and tokens[index + 2] == "."
+                and (tokens[index - 1].lower(), tokens[index + 1].lower())
+                in dotted_non_terminal_abbrev
+            )
+            ends_dotted_abbrev = (
+                index >= 3
+                and tokens[index - 2] == "."
+                and (tokens[index - 3].lower(), tokens[index - 1].lower())
+                in dotted_non_terminal_abbrev
+            )
+            if starts_dotted_abbrev or ends_dotted_abbrev:
                 return False
 
         return True
