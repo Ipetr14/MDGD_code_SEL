@@ -98,97 +98,73 @@ def find_equation_neighbors_str(predicted_adjacency_list):
     return predicted_neighbors
 
 
-"""
-evaluate_adjacency_lists(true_adjacency_lists, predicted_adjacency_lists)
-Input: true_adjacency_lists -- labeled adjacency list
-       predicted_adjacency_lists -- predicted adjacency list for algorithm
-Return: accuracy, precision, recall, and f1_score for each article tested on and the overall accuracy, precision, recall, and f1_score for the algorithm as a whole
-Function: Evaluate accuracy of classification
-"""
+
 def evaluate_adjacency_lists(true_adjacency_lists, predicted_adjacency_lists):
+    """
+    Inputs:
+        true_adjacency_lists       -- list of dicts: {node: [neighbor, ...], ...}
+        predicted_adjacency_lists  -- list of dicts (or strings handled by find_equation_neighbors_str)
+    Returns:
+        accuracies, precisions, recalls, f1_scores,
+        overall_accuracy, overall_precision, overall_recall, overall_f1_score,
+        num_skipped
+    Notes:
+        - Edge-set evaluation: TP/FP/FN only, no TN. Matches LLM pipeline compute_article_tp_fp_fn.
+        - accuracies field is kept for API compatibility but returns 0.0 (undefined without TN).
+    """
     accuracies = []
     precisions = []
     recalls = []
     f1_scores = []
-    overall_true_positive = 0
-    overall_true_negative = 0
-    overall_false_positive = 0
-    overall_false_negative = 0
+
+    overall_tp = overall_fp = overall_fn = 0
     num_skipped = 0
 
-    for cur_true_adjacency_list, cur_predicted_adjacency_list in zip(true_adjacency_lists, predicted_adjacency_lists):
-        # If predicted adjacency list is a string, then it is from the bayes implementation
-        if (isinstance(cur_predicted_adjacency_list, str)):
-            predicted_adjacency_list = find_equation_neighbors_str(cur_predicted_adjacency_list)
-            ''' ----------- CAN GET RID OF DUE TO CHANGE -----------'''
+    for cur_true_adj, cur_pred_adj in zip(true_adjacency_lists, predicted_adjacency_lists):
+        if isinstance(cur_pred_adj, str):
+            predicted_adj = find_equation_neighbors_str(cur_pred_adj)
         else:
-            predicted_adjacency_list = cur_predicted_adjacency_list
-        
-        # Skip bad parsings
-        if predicted_adjacency_list is None:
+            predicted_adj = cur_pred_adj
+
+        if predicted_adj is None:
             num_skipped += 1
             continue
-        true_positive = 0
-        true_negative = 0
-        false_positive = 0
-        false_negative = 0
 
-        # All equations
-        all_equations = set(cur_true_adjacency_list.keys()).union(set(predicted_adjacency_list.keys()))
-        
-        # Calculate Error
-        for equation, true_neighbors in cur_true_adjacency_list.items():
-            predicted_neighbors = predicted_adjacency_list.get(equation, [])
+        true_edges = {
+            (src, tgt)
+            for src, tgts in cur_true_adj.items()
+            for tgt in (tgts or [])
+            if tgt is not None
+        }
+        pred_edges = {
+            (src, tgt)
+            for src, tgts in predicted_adj.items()
+            for tgt in (tgts or [])
+            if tgt is not None
+        }
 
-            for neighbor in true_neighbors:
-                if neighbor in predicted_neighbors:
-                    # True edge is identified by algorithm
-                    true_positive += 1
-                    overall_true_positive += 1
-                else:
-                    # True edge is not identified by algorithm
-                    false_negative += 1
-                    overall_false_negative += 1
+        tp = len(true_edges & pred_edges)
+        fp = len(pred_edges - true_edges)
+        fn = len(true_edges - pred_edges)
 
-            for neighbor in predicted_neighbors:
-                if neighbor not in true_neighbors:
-                    # Edge identified by algorithm but edge not labeled by ground truth
-                    false_positive += 1
-                    overall_false_positive += 1
+        overall_tp += tp
+        overall_fp += fp
+        overall_fn += fn
 
-            for neighbor in all_equations - set(true_neighbors):
-                if neighbor not in predicted_neighbors:
-                    # No edge detected by algorithm and no edge labeled by ground truth
-                    true_negative += 1
-                    overall_true_negative += 1
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall    = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1        = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
 
-        # Handling extra equations in predicted that are not in true
-        for equation, predicted_neighbors in predicted_adjacency_list.items():
-            if equation not in cur_true_adjacency_list:
-                # Extra equations - no true neighbors exist
-                false_positive += len(predicted_neighbors)
-                overall_false_positive += len(predicted_neighbors)
-                # No true neighbors means every other node in all_equations is a true negative
-                true_negative += len(all_equations - set(predicted_neighbors))
-                overall_true_negative += len(all_equations - set(predicted_neighbors))
-
-
-        accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative) if (true_positive + true_negative + false_positive + false_negative) != 0 else 0
-        precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) != 0 else 0
-        recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) != 0 else 0
-        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
-
-        accuracies.append(accuracy)
+        accuracies.append(0.0)
         precisions.append(precision)
         recalls.append(recall)
-        f1_scores.append(f1_score)
+        f1_scores.append(f1)
 
-    overall_accuracy = (overall_true_positive + overall_true_negative) / (overall_true_positive + overall_true_negative + overall_false_positive + overall_false_negative) if (overall_true_positive + overall_true_negative + overall_false_positive + overall_false_negative) != 0 else 0
-    overall_precision = overall_true_positive / (overall_true_positive + overall_false_positive) if (overall_true_positive + overall_false_positive) != 0 else 0
-    overall_recall = overall_true_positive / (overall_true_positive + overall_false_negative) if (overall_true_positive + overall_false_negative) != 0 else 0
-    overall_f1_score = 2 * (overall_precision * overall_recall) / (overall_precision + overall_recall) if (overall_precision + overall_recall) != 0 else 0
+    overall_precision = overall_tp / (overall_tp + overall_fp) if (overall_tp + overall_fp) > 0 else 0.0
+    overall_recall    = overall_tp / (overall_tp + overall_fn) if (overall_tp + overall_fn) > 0 else 0.0
+    overall_f1_score  = 2 * overall_precision * overall_recall / (overall_precision + overall_recall) if (overall_precision + overall_recall) > 0 else 0.0
 
-    return accuracies, precisions, recalls, f1_scores, overall_accuracy, overall_precision, overall_recall, overall_f1_score, num_skipped
+    return accuracies, precisions, recalls, f1_scores, 0.0, overall_precision, overall_recall, overall_f1_score, num_skipped
 
 
 def load_sel_tuning_data():

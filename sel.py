@@ -15,6 +15,38 @@ from bs4 import BeautifulSoup, NavigableString
 
 import article_parser
 
+
+_EQUATION_ID_PATTERN = re.compile(r"^(?P<section>Sx?\d+)\.(?P<kind>E|Ex)(?P<number>\d+)$")
+_BARE_EQUATION_ID_PATTERN = re.compile(r"^(?P<kind>E|Ex)(?P<number>\d+)$")
+
+
+def canonicalize_equation_id(raw_id):
+    """
+    Normalize an HTML equation container/reference ID to the annotation ID form.
+
+    The scored annotations use section IDs such as `S2`, starred-section IDs
+    such as `Sx2`, and one legacy article with bare `E1` HTML IDs. The
+    annotations store the bare form as `S0.E1`.
+
+    Args:
+        raw_id (str): ID without a leading reference marker (`#`).
+
+    Returns:
+        tuple[str, bool] | None: canonical equation ID and whether it is a
+            numbered equation; `None` when the ID is not an equation container.
+    """
+    match = _EQUATION_ID_PATTERN.fullmatch(raw_id)
+    if match:
+        return raw_id, match.group("kind") == "E"
+
+    match = _BARE_EQUATION_ID_PATTERN.fullmatch(raw_id)
+    if match:
+        canonical_id = f"S0.{match.group('kind')}{match.group('number')}"
+        return canonical_id, match.group("kind") == "E"
+
+    return None
+
+
 def parse_html(html_path):
     """
     Parse one HTML article and replace relevant math nodes with `MATHMARKER`.
@@ -50,27 +82,28 @@ def parse_html(html_path):
     # Numbered displays and refs to numbered displays get a marker.
     # Unnumbered display expressions (e.g. S3.Ex7) are removed so their
     # internal MathML text does not inflate the word gap between equations.
-    display_id_pattern = re.compile(r"^S\d+\.(E\d+|Ex\d+)$")
-    numbered_equation_pattern = re.compile(r"^S\d+\.E\d+$")
-    equation_ref_pattern = re.compile(r"^#(S\d+\.E\d+)$")
 
     for tag in soup.find_all(True):
         if tag.name == "a":
             href = tag.get("href", "")
-            ref_match = equation_ref_pattern.fullmatch(href)
-            if not ref_match:
+            ref_id = canonicalize_equation_id(href[1:]) if href.startswith("#") else None
+            if ref_id is None or not ref_id[1]:
                 continue
 
             # References inside display equations are irrelevant because the
             # whole display container is handled separately.
-            parent_display = tag.find_parent(
-                ["table", "tbody"],
-                id=display_id_pattern,
+            parent_display = next(
+                (
+                    parent
+                    for parent in tag.find_parents(["table", "tbody"])
+                    if canonicalize_equation_id(parent.get("id", "")) is not None
+                ),
+                None,
             )
             if parent_display is not None:
                 continue
 
-            marker_equation_ids.append(ref_match.group(1))
+            marker_equation_ids.append(ref_id[0])
             marker_is_display.append(False)
             tag.replace_with(NavigableString(" MATHMARKER "))
             continue
@@ -79,7 +112,8 @@ def parse_html(html_path):
             continue
 
         container_id = tag.get("id")
-        if not container_id or not display_id_pattern.fullmatch(container_id):
+        parsed_id = canonicalize_equation_id(container_id) if container_id else None
+        if parsed_id is None:
             continue
 
         if container_id in seen_display_ids:
@@ -87,9 +121,10 @@ def parse_html(html_path):
 
         seen_display_ids.add(container_id)
 
-        if numbered_equation_pattern.fullmatch(container_id):
-            equation_ids.append(container_id)
-            marker_equation_ids.append(container_id)
+        canonical_id, is_numbered = parsed_id
+        if is_numbered:
+            equation_ids.append(canonical_id)
+            marker_equation_ids.append(canonical_id)
             marker_is_display.append(True)
             tag.replace_with(NavigableString(" MATHMARKER "))
         else:
