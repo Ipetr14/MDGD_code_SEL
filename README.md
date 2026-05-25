@@ -151,11 +151,11 @@ The candidate ranges are:
   `SEL_MAX_WORD_GAP_LIMIT`, currently `0..300`;
 - `max_sentence_gap`: `0` plus sentence-gap values observed on cached
   transitions whose target is displayed and whose gap is no greater than
-  `SEL_MAX_SENTENCE_GAP_LIMIT`, currently capped at `10`.
+  `SEL_MAX_SENTENCE_GAP_LIMIT`, currently capped at `15`.
 
 With the currently available 63 HTML-backed articles, the observed
-sentence-gap candidates are `0..10`, so the current search considers
-`6 * 301 * 11 = 19,866` threshold triples.
+sentence-gap candidates are `0..15`, so the current search considers
+`6 * 301 * 16 = 28,896` threshold triples.
 
 The score used to select a triple is overall edge F1 returned by
 `evaluate_adjacency_lists()`. On an F1 tie, smaller thresholds are preferred
